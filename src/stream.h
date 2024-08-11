@@ -1,3 +1,5 @@
+#pragma once
+
 #define stream_ame_comic 0
 #define stream_ame_drag 1
 #define stream_ame_egosearching 2
@@ -369,6 +371,7 @@
 #define stream_cho_b_wristcut1_2 368
 #define stream_cho_b_wristcut1_3 369
 
+typedef int animation_t;
 
 int frame_counts[] =
 {
