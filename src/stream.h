@@ -370,6 +370,7 @@
 #define stream_cho_b_wristcut1_1 367
 #define stream_cho_b_wristcut1_2 368
 #define stream_cho_b_wristcut1_3 369
+#define ANIMATION_FINISHED 370
 
 typedef int animation_t;
 

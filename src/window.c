@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <X11/keysym.h>
 
 animation_t currentAnimation = stream_ame_idle;
 int total_frames = 0;
@@ -41,7 +42,19 @@ int handleWindow(Display *display, Window window)
 
             if(event.type == KeyPress)
             {
-                break;
+                KeySym key = XLookupKeysym(&event.xkey, 0);
+                if(key == XK_q)
+                {
+                    break;
+                }
+                if(key == XK_Down || key == XK_Right)
+                {
+                    changeAnimation(currentAnimation + 1);
+                }
+                if(key == XK_Up || key == XK_Left)
+                {
+                    changeAnimation(currentAnimation - 1);
+                }
             }
             if(event.type == DestroyNotify)
             {
@@ -98,10 +111,19 @@ void drawImage(Window window, cairo_surface_t *bg, int width, int height, cairo_
 void changeAnimation(animation_t target)
 {
     unloadFrames();
+    if(target >= ANIMATION_FINISHED)
+    {
+        target = 0;
+    }
+    else if(target < 0)
+    {
+        target = ANIMATION_FINISHED - 1;
+    }
     currentAnimation = target;
     total_frames = frame_counts[currentAnimation];
     current_frame = 0;
     current_frame_timeout = durations[currentAnimation][0];
+    start_time = getMilliseconds();
     loadFrames();
 }
 
