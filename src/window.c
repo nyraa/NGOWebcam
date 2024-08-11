@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-animation_t currentAnimation = stream_ame_game_a;
+animation_t currentAnimation = stream_ame_idle_happy_a;
 int total_frames = 0;
 
 cairo_surface_t **frames = NULL;
@@ -43,7 +43,7 @@ int handleWindow(Display *display, Window window)
                 break;
             }
         }
-        drawImage(display, window, bg, width, height, screenSaver, frames[current_frame]);
+        drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
         updateFrame();
         usleep(current_frame_timeout * 1000000);
     }
@@ -61,19 +61,23 @@ void updateFrame()
     current_frame_timeout = durations[currentAnimation][current_frame];
 }
 
-void drawImage(Display *display, Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
+void drawImage(Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
 {
     printf("Drawing frame %d\n", current_frame);
 
-    /*cairo_set_source_surface(cr, bg, 0, 0);
+    cairo_push_group(cr);
+    cairo_set_source_surface(cr, bg, 0, 0);
     cairo_paint(cr);
 
     cairo_set_source_surface(cr, screenSaver, 0, 0);
-    cairo_paint(cr);*/
+    cairo_paint(cr);
 
     cairo_set_source_surface(cr, ame, 0, 0);
     cairo_paint(cr);
 
+    cairo_pop_group_to_source(cr);
+    cairo_paint(cr);
+    cairo_surface_flush(surface);
 }
 
 void changeAnimation(animation_t target)
@@ -125,6 +129,8 @@ int init(Display **display, Window *window)
     loadBackground();
     width = cairo_image_surface_get_width(bg);
     height = cairo_image_surface_get_height(bg);
+
+
     *display = XOpenDisplay(NULL);
     if(*display == NULL)
     {
@@ -133,7 +139,9 @@ int init(Display **display, Window *window)
     }
     screen = DefaultScreen(*display);
 
-    *window = XCreateSimpleWindow(*display, RootWindow(*display, screen), 10, 10, width, height, 1, BlackPixel(*display, screen), WhitePixel(*display, screen));
+    Visual *visual = DefaultVisual(*display, screen);
+
+    *window = XCreateSimpleWindow(*display, RootWindow(*display, screen), 0, 0, width, height, 0, BlackPixel(*display, screen), WhitePixel(*display, screen));
 
     // set window title
     XStoreName(*display, *window, "Webcam");
@@ -148,7 +156,7 @@ int init(Display **display, Window *window)
     changeAnimation(currentAnimation);
 
     // create cairo surface
-    surface = cairo_xlib_surface_create(*display, *window, DefaultVisual(*display, screen), width, height);
+    surface = cairo_xlib_surface_create(*display, *window, visual, width, height);
     cr = cairo_create(surface);
     return 0;
 }

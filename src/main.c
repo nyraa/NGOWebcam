@@ -6,7 +6,6 @@
 
 #include "window.h"
 
-void drawImage(Display *display, Window window, cairo_surface_t *image, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame);
 int main()
 {
     Display *display;
@@ -20,6 +19,7 @@ int main()
 
     handleWindow(display, window);
 
+    destroy();
     XCloseDisplay(display);
     return 0;
 }
