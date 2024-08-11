@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 animation_t currentAnimation = stream_ame_game_a;
 int total_frames = 0;
@@ -20,51 +21,59 @@ cairo_surface_t *screenSaver = NULL;
 
 int height;
 int width;
+cairo_surface_t *surface;
+cairo_t *cr;
+int screen;
 
 int handleWindow(Display *display, Window window)
 {
     XEvent event;
     while(1)
     {
-        XNextEvent(display, &event);
+        if(XPending(display) > 0)
+        {
+            XNextEvent(display, &event);
 
-        if(event.type == Expose)
-        {
-            drawImage(display, window, bg, width, height, screenSaver, frames[current_frame]);
+            if(event.type == KeyPress)
+            {
+                break;
+            }
+            if(event.type == DestroyNotify)
+            {
+                break;
+            }
         }
-
-        if(event.type == KeyPress)
-        {
-            break;
-        }
-        if(event.type == DestroyNotify)
-        {
-            break;
-        }
+        drawImage(display, window, bg, width, height, screenSaver, frames[current_frame]);
+        updateFrame();
+        usleep(current_frame_timeout * 1000000);
     }
     return 0;
 }
 
+void updateFrame()
+{
+    current_frame++;
+    printf("Frame: %d\n", current_frame);
+    if(current_frame >= total_frames)
+    {
+        current_frame = 0;
+    }
+    current_frame_timeout = durations[currentAnimation][current_frame];
+}
+
 void drawImage(Display *display, Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
 {
-    int screen = DefaultScreen(display);
-    cairo_surface_t *surface;
-    cairo_t *cr;
+    printf("Drawing frame %d\n", current_frame);
 
-    surface = cairo_xlib_surface_create(display, window, DefaultVisual(display, screen), width, height);
-    cr = cairo_create(surface);
-
-    cairo_set_source_surface(cr, bg, 0, 0);
+    /*cairo_set_source_surface(cr, bg, 0, 0);
     cairo_paint(cr);
 
     cairo_set_source_surface(cr, screenSaver, 0, 0);
-    cairo_paint(cr);
+    cairo_paint(cr);*/
 
     cairo_set_source_surface(cr, ame, 0, 0);
     cairo_paint(cr);
 
-    cairo_destroy(cr);
-    cairo_surface_destroy(surface);
 }
 
 void changeAnimation(animation_t target)
@@ -122,7 +131,7 @@ int init(Display **display, Window *window)
         fprintf(stderr, "Cannot open display\n");
         return 1;
     }
-    int screen = DefaultScreen(*display);
+    screen = DefaultScreen(*display);
 
     *window = XCreateSimpleWindow(*display, RootWindow(*display, screen), 10, 10, width, height, 1, BlackPixel(*display, screen), WhitePixel(*display, screen));
 
@@ -137,6 +146,10 @@ int init(Display **display, Window *window)
 
     // load init animation
     changeAnimation(currentAnimation);
+
+    // create cairo surface
+    surface = cairo_xlib_surface_create(*display, *window, DefaultVisual(*display, screen), width, height);
+    cr = cairo_create(surface);
     return 0;
 }
 
@@ -145,4 +158,6 @@ void destroy()
     unloadFrames();
     cairo_surface_destroy(bg);
     cairo_surface_destroy(screenSaver);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
 }
