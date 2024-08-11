@@ -9,12 +9,13 @@
 #include <time.h>
 #include <unistd.h>
 
-animation_t currentAnimation = stream_ame_talk_b;
+animation_t currentAnimation = stream_ame_idle;
 int total_frames = 0;
 
 cairo_surface_t **frames = NULL;
 double current_frame_timeout = 0.0;
 int current_frame = 0;
+long start_time = 0;
 
 cairo_surface_t *bg = NULL;
 cairo_surface_t *screenSaver = NULL;
@@ -33,6 +34,10 @@ int handleWindow(Display *display, Window window)
         if(XPending(display) > 0)
         {
             XNextEvent(display, &event);
+            if(event.type == Expose)
+            {
+                drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
+            }
 
             if(event.type == KeyPress)
             {
@@ -43,22 +48,32 @@ int handleWindow(Display *display, Window window)
                 break;
             }
         }
-        drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
-        updateFrame();
-        usleep(current_frame_timeout * 1000000);
+        if(updateFrame())
+        {
+            drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
+        }
     }
     return 0;
 }
 
-void updateFrame()
+int updateFrame()
 {
-    current_frame++;
-    printf("Frame: %d\n", current_frame);
-    if(current_frame >= total_frames)
+    if(getMilliseconds() - start_time >= current_frame_timeout)
     {
-        current_frame = 0;
+        start_time = getMilliseconds();
+        current_frame++;
+        printf("Frame: %d\n", current_frame);
+        if(current_frame >= total_frames)
+        {
+            current_frame = 0;
+        }
+        current_frame_timeout = durations[currentAnimation][current_frame] * 1000;
+        return 1;
     }
-    current_frame_timeout = durations[currentAnimation][current_frame];
+    else
+    {
+        return 0;
+    }
 }
 
 void drawImage(Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
@@ -177,7 +192,18 @@ int init(Display **display, Window *window)
     // create cairo surface
     surface = cairo_xlib_surface_create(*display, *window, visual, width, height);
     cr = cairo_create(surface);
+
+    // init draw
+    drawImage(*window, bg, width, height, screenSaver, frames[current_frame]);
+    start_time = getMilliseconds();
     return 0;
+}
+
+unsigned long long getMilliseconds()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000LL;
 }
 
 void destroy()
