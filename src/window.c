@@ -15,6 +15,36 @@ cairo_surface_t **frames = NULL;
 double current_frame_timeout = 0.0;
 int current_frame = 0;
 
+cairo_surface_t *bg = NULL;
+cairo_surface_t *screenSaver = NULL;
+
+int height;
+int width;
+
+int handleWindow(Display *display, Window window)
+{
+    XEvent event;
+    while(1)
+    {
+        XNextEvent(display, &event);
+
+        if(event.type == Expose)
+        {
+            drawImage(display, window, bg, width, height, screenSaver, frames[current_frame]);
+        }
+
+        if(event.type == KeyPress)
+        {
+            break;
+        }
+        if(event.type == DestroyNotify)
+        {
+            break;
+        }
+    }
+    return 0;
+}
+
 void drawImage(Display *display, Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
 {
     int screen = DefaultScreen(display);
@@ -70,8 +100,22 @@ void loadFrames()
     }
 }
 
-int init(Display **display, Window *window, int width, int height)
+void loadBackground()
 {
+    bg = cairo_image_surface_create_from_png("image/bg/bg_stream.png");
+    screenSaver = cairo_image_surface_create_from_png("image/bg/bg_stream_screensaver_3.png");
+    if(cairo_surface_status(bg) != CAIRO_STATUS_SUCCESS || cairo_surface_status(screenSaver) != CAIRO_STATUS_SUCCESS)
+    {
+        fprintf(stderr, "Cannot load image\n");
+        exit(1);
+    }
+}
+
+int init(Display **display, Window *window)
+{
+    loadBackground();
+    width = cairo_image_surface_get_width(bg);
+    height = cairo_image_surface_get_height(bg);
     *display = XOpenDisplay(NULL);
     if(*display == NULL)
     {
@@ -92,6 +136,13 @@ int init(Display **display, Window *window, int width, int height)
     XMapWindow(*display, *window);
 
     // load init animation
-    loadFrames();
+    changeAnimation(currentAnimation);
     return 0;
+}
+
+void destroy()
+{
+    unloadFrames();
+    cairo_surface_destroy(bg);
+    cairo_surface_destroy(screenSaver);
 }

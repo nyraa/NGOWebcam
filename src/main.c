@@ -11,46 +11,14 @@ int main()
 {
     Display *display;
     Window window;
-    XEvent event;
 
-
-    cairo_surface_t *bg = cairo_image_surface_create_from_png("image/bg/bg_stream.png");
-    int width = cairo_image_surface_get_width(bg);
-    int height = cairo_image_surface_get_height(bg);
-
-    cairo_surface_t *screenSaver = cairo_image_surface_create_from_png("image/bg/bg_stream_screensaver_3.png");
-
-    cairo_surface_t *ame = cairo_image_surface_create_from_png("image/Stream_V2/Ame/A/stream_ame_game/stream_ame_game_000.png");
-
-    if(cairo_surface_status(bg) != CAIRO_STATUS_SUCCESS || cairo_surface_status(screenSaver) != CAIRO_STATUS_SUCCESS || cairo_surface_status(ame) != CAIRO_STATUS_SUCCESS)
+    if(init(&display, &window) != 0)
     {
-        fprintf(stderr, "Cannot load image\n");
+        fprintf(stderr, "Failed to initialize window\n");
         exit(1);
     }
 
-    if(init(&display, &window, width, height) != 0)
-    {
-        exit(1);
-    }
-    
-    while(1)
-    {
-        XNextEvent(display, &event);
-
-        if(event.type == Expose)
-        {
-            drawImage(display, window, bg, width, height, screenSaver, ame);
-        }
-
-        if(event.type == KeyPress)
-        {
-            break;
-        }
-        if(event.type == DestroyNotify)
-        {
-            break;
-        }
-    }
+    handleWindow(display, window);
 
     XCloseDisplay(display);
     return 0;
