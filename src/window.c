@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-animation_t currentAnimation = stream_ame_idle_happy_a;
+animation_t currentAnimation = stream_ame_talk_b;
 int total_frames = 0;
 
 cairo_surface_t **frames = NULL;
@@ -101,14 +101,33 @@ void unloadFrames()
 
 void loadFrames()
 {
+    int w, h;
     frames = malloc(sizeof(cairo_surface_t *) * total_frames);
     for(int i = 0; i < total_frames; i++)
     {
-        frames[i] = cairo_image_surface_create_from_png(frames_list[currentAnimation][i]);
-        if(cairo_surface_status(frames[i]) != CAIRO_STATUS_SUCCESS)
+        cairo_surface_t *frame = cairo_image_surface_create_from_png(frames_list[currentAnimation][i]);
+        if(cairo_surface_status(frame) != CAIRO_STATUS_SUCCESS)
         {
             fprintf(stderr, "Cannot load image\n");
             exit(1);
+        }
+        w = cairo_image_surface_get_width(frame);
+        h = cairo_image_surface_get_height(frame);
+        if(w != width || h != height)
+        {
+            cairo_surface_t *scaled = cairo_image_surface_create(cairo_image_surface_get_format(frame), width, height);
+            cairo_t *cr = cairo_create(scaled);
+            cairo_scale(cr, (double)width / w, (double)height / h);
+            cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+            cairo_set_source_surface(cr, frame, 0, 0);
+            cairo_paint(cr);
+            cairo_destroy(cr);
+            cairo_surface_destroy(frame);
+            frames[i] = scaled;
+        }
+        else
+        {
+            frames[i] = frame;
         }
     }
 }
