@@ -1,11 +1,19 @@
 #include "window.h"
+#include "stream.h"
 
 #include <X11/Xlib.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
+animation_t currentAnimation = stream_ame_game_a;
+int total_frames = 0;
+
+cairo_surface_t **frames = NULL;
+double current_frame_timeout = 0.0;
+int current_frame = 0;
 
 void drawImage(Display *display, Window window, cairo_surface_t *bg, int width, int height, cairo_surface_t *screenSaver, cairo_surface_t *ame)
 {
@@ -29,6 +37,39 @@ void drawImage(Display *display, Window window, cairo_surface_t *bg, int width, 
     cairo_surface_destroy(surface);
 }
 
+void changeAnimation(animation_t target)
+{
+    unloadFrames();
+    currentAnimation = target;
+    total_frames = frame_counts[currentAnimation];
+    current_frame = 0;
+    current_frame_timeout = durations[currentAnimation][0];
+    loadFrames();
+}
+
+void unloadFrames()
+{
+    for(int i = 0; i < total_frames; i++)
+    {
+        cairo_surface_destroy(frames[i]);
+    }
+    free(frames);
+}
+
+void loadFrames()
+{
+    frames = malloc(sizeof(cairo_surface_t *) * total_frames);
+    for(int i = 0; i < total_frames; i++)
+    {
+        frames[i] = cairo_image_surface_create_from_png(frames_list[currentAnimation][i]);
+        if(cairo_surface_status(frames[i]) != CAIRO_STATUS_SUCCESS)
+        {
+            fprintf(stderr, "Cannot load image\n");
+            exit(1);
+        }
+    }
+}
+
 int init(Display **display, Window *window, int width, int height)
 {
     *display = XOpenDisplay(NULL);
@@ -49,5 +90,8 @@ int init(Display **display, Window *window, int width, int height)
 
     // show window
     XMapWindow(*display, *window);
+
+    // load init animation
+    loadFrames();
     return 0;
 }
