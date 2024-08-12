@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <X11/keysym.h>
 
-animation_t currentAnimation = stream_ame_hair_long;
+animation_t currentAnimation = stream_cho_g_express1;
 int total_frames = 0;
 
 cairo_surface_t **frames = NULL;
