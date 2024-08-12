@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <X11/keysym.h>
 
-animation_t currentAnimation = stream_ame_idle;
+animation_t currentAnimation = stream_ame_hair_long;
 int total_frames = 0;
 
 cairo_surface_t **frames = NULL;
@@ -121,6 +121,15 @@ void changeAnimation(animation_t target)
     }
     currentAnimation = target;
     total_frames = frame_counts[currentAnimation];
+    while(total_frames <= 0)
+    {
+        currentAnimation++;
+        if(currentAnimation >= ANIMATION_FINISHED)
+        {
+            currentAnimation = 0;
+        }
+        total_frames = frame_counts[currentAnimation];
+    }
     current_frame = 0;
     current_frame_timeout = durations[currentAnimation][0];
     start_time = getMilliseconds();
