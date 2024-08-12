@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 
 // from window
@@ -12,6 +13,7 @@ extern int width, height;
 
 animation_t currentAnimation = stream_ame_idle_happy_a;
 int total_frames = 0;
+bool isLoop = true;
 
 cairo_surface_t **frames = NULL;
 double current_frame_timeout = 0.0;
@@ -37,6 +39,7 @@ void changeAnimation(animation_t target)
     total_frames = frame_counts[currentAnimation];
     current_frame = 0;
     current_frame_timeout = durations[currentAnimation][0];
+    isLoop = loop_list[currentAnimation];
     start_time = getMilliseconds();
 
     // load new frames
