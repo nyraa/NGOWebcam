@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -std=gnu99
 LDFLAGS = -L/opt/X11/lib -lX11 -lcairo
 SRC_DIR = src
 BIN_DIR = bin
