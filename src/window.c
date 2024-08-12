@@ -29,6 +29,8 @@ int screen;
 
 int handleWindow(Display *display, Window window)
 {
+    Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &wmDeleteMessage, 1);
     XEvent event;
     while(1)
     {
@@ -56,9 +58,13 @@ int handleWindow(Display *display, Window window)
                     changeAnimation(currentAnimation - 1);
                 }
             }
-            if(event.type == DestroyNotify)
+            if(event.type == ClientMessage)
             {
-                break;
+                if(event.xclient.data.l[0] == wmDeleteMessage)
+                {
+                    printf("Exiting\n");
+                    break;
+                }
             }
         }
         if(updateFrame())
