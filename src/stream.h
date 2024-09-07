@@ -379,3 +379,5 @@ extern const int frame_counts[];
 extern const bool loop_list[];
 extern const double durations[][132];
 extern const char* frames_list[][132];
+extern const int screensaver_count;
+extern const char* screensavers[];

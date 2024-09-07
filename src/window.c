@@ -20,7 +20,8 @@ extern unsigned long long start_time;
 
 
 cairo_surface_t *bg = NULL;
-cairo_surface_t *screenSaver = NULL;
+cairo_surface_t **screenSaver = NULL;
+int current_screensaver = 0;
 
 int height;
 int width;
@@ -43,7 +44,7 @@ int handleWindow(Display *display, Window window)
             XNextEvent(display, &event);
             if(event.type == Expose)
             {
-                drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
+                drawImage(window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
             }
 
             if(event.type == KeyPress)
@@ -53,13 +54,32 @@ int handleWindow(Display *display, Window window)
                 {
                     break;
                 }
-                if(key == XK_Down || key == XK_Right)
+                if(key == XK_Right)
                 {
                     changeAnimation(currentAnimation + 1);
                 }
-                if(key == XK_Up || key == XK_Left)
+                if(key == XK_Left)
                 {
                     changeAnimation(currentAnimation - 1);
+                }
+                if(key == XK_Up)
+                {
+                    current_screensaver++;
+                    if(current_screensaver >= screensaver_count)
+                    {
+                        current_screensaver = 0;
+                    }
+                    // force update when change screensaver
+                    drawImage(window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
+                }
+                if(key == XK_Down)
+                {
+                    current_screensaver--;
+                    if(current_screensaver < 0)
+                    {
+                        current_screensaver = screensaver_count - 1;
+                    }
+                    drawImage(window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
                 }
             }
             if(event.type == ClientMessage)
@@ -73,7 +93,7 @@ int handleWindow(Display *display, Window window)
         }
         if(updateFrame())
         {
-            drawImage(window, bg, width, height, screenSaver, frames[current_frame]);
+            drawImage(window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
         }
     }
     return 0;
@@ -103,10 +123,19 @@ void drawImage(Window window, cairo_surface_t *bg, int width, int height, cairo_
 void loadBackground()
 {
     bg = cairo_image_surface_create_from_png("image/bg/bg_stream.png");
-    screenSaver = cairo_image_surface_create_from_png("image/bg/bg_stream_screensaver_3.png");
-    if(cairo_surface_status(bg) != CAIRO_STATUS_SUCCESS || cairo_surface_status(screenSaver) != CAIRO_STATUS_SUCCESS)
+    screenSaver = malloc(sizeof(cairo_surface_t *) * screensaver_count);
+    for(int i = 0; i < screensaver_count; ++i)
     {
-        fprintf(stderr, "Cannot load image\n");
+        screenSaver[i] = cairo_image_surface_create_from_png(screensavers[i]);
+        if(cairo_surface_status(screenSaver[i]) != CAIRO_STATUS_SUCCESS)
+        {
+            fprintf(stderr, "Cannot load image %s\n", screensavers[i]);
+            exit(1);
+        }
+    }
+    if(cairo_surface_status(bg) != CAIRO_STATUS_SUCCESS)
+    {
+        fprintf(stderr, "Cannot load background image\n");
         exit(1);
     }
 }
@@ -147,7 +176,7 @@ int init(Display **display, Window *window)
     cr = cairo_create(surface);
 
     // init draw
-    drawImage(*window, bg, width, height, screenSaver, frames[current_frame]);
+    drawImage(*window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
     start_time = getMilliseconds();
     return 0;
 }
@@ -156,7 +185,9 @@ void destroy()
 {
     unloadFrames();
     cairo_surface_destroy(bg);
-    cairo_surface_destroy(screenSaver);
+    for(int i = 0; i < screensaver_count; ++i)
+        cairo_surface_destroy(screenSaver[i]);
+    free(screenSaver);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 }
