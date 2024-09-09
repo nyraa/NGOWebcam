@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/keysym.h>
+#include <unistd.h>
 
 // from webcamManager
 extern cairo_surface_t **frames;
@@ -95,6 +96,7 @@ int handleWindow(Display *display, Window window)
         {
             drawImage(window, bg, width, height, screenSaver[current_screensaver], frames[current_frame]);
         }
+        usleep(10000);
     }
     return 0;
 }
